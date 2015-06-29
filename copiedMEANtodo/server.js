@@ -1,16 +1,13 @@
-    var express  = require('express');
-    var app      = express();                               // create our app w/ express
-    var mongoose = require('mongoose');                     // mongoose for couchdb
-    var morgan = require('morgan');             // log requests to the console (express4)
-    var bodyParser = require('body-parser');    // pull information from HTML POST (express4)
-    var methodOverride = require('method-override'); // simulate DELETE and PUT (express4)
-    var couchbase = require('couchbase');
-    var myCluster = new couchbase.Cluster('localhost:8091');
-    var myBucket = myCluster.openBucket('ToDoList');
-    myBucket.enableN1ql('http://localhost:8093/');
-    var N1qlQuery = require('couchbase').N1qlQuery;
-    var query = N1qlQuery.fromString('SELECT * FROM ToDoList'); // example for query structure later to send
-
+    var express         = require('express');
+    var app             = express();                        // create our app w/ express
+    var mongoose        = require('mongoose');              // mongoose for couchdb
+    var morgan          = require('morgan');                // log requests to the console (express4)
+    var bodyParser      = require('body-parser');           // pull information from HTML POST (express4)
+    var methodOverride  = require('method-override');       // simulate DELETE and PUT (express4)
+    var couchbase       = require('couchbase');
+    var N1qlQuery       = require('couchbase').N1qlQuery;
+    var myCluster       = new couchbase.Cluster('localhost:8091');
+    var myBucket        = myCluster.openBucket('ToDoList');
     // configuration =================
 
     // mongoose.connect('mongodb://node:nodeuser@mongo.onmodulus.net:27017/uwO3mypu');     // connect to mongoDB database on modulus.io
@@ -21,6 +18,8 @@
     app.use(bodyParser.json());                                     // parse application/json
     app.use(bodyParser.json({ type: 'application/vnd.api+json' })); // parse application/vnd.api+json as json
     app.use(methodOverride());
+    myBucket.enableN1ql('http://localhost:8093/');
+
 
     /*var Todo = mongoose.model('Todo', {
         text : String
@@ -32,17 +31,17 @@
     // get all todos
 
     //COUCHBASE
-    app.get('/api/todos', function(req, res) {
+    getAllToDos = function(req, res) {
         var allToDos=N1qlQuery.fromString('SELECT text FROM ToDoList');
         myBucket.query(allToDos, function(err, todos) {
                     if (err) {
-                        console.log('error hit');
-                        res.send(err);
+                        console.log('error hit in selecting all todos:' + error);
                     }
                     res.json(todos);
                     console.log('success');
-        });
-    });
+        }
+
+    app.get('/api/todos', getAllToDos(req, res));
     
     //mongo
 /*
@@ -65,18 +64,13 @@
 
         // create a todo, information comes from AJAX request from Angular
         // COUCHBASE
-        var insertToDo = N1qlQuery.fromString('INSERT INTO ToDoList (KEY, VALUE) VALUES("query1034",{"text" : '+req.body.text+", \"done\": "+false+ "})");
+        var insertToDo = N1qlQuery.fromString('INSERT INTO ToDoList (KEY, VALUE) VALUES(UUID(),{"text" : '+req.body.text+", \"done\": "+false+ "})");
         myBucket.query(insertToDo, function(err, todo) {
             if (err)
-                res.send(err);
+                console.log("error in inserting todo" + err);
 
             // get and return all the todos after you create another
-            var allToDos=N1qlQuery.fromString('SELECT text FROM ToDoList')
-            myBucket.query(allToDos, function(err, todos) {
-                if (err)
-                    res.send(err)
-                res.json(todos);
-            });
+            getAllToDos(req, res);
             //res.json({ });
         });
     });
@@ -98,24 +92,24 @@
         });
 
     });
-
+*/
+    // how does MONGO store IDs/how could I reference an ID here
     // delete a todo
     app.delete('/api/todos/:todo_id', function(req, res) {
-        Todo.remove({
+
+            // get and return all the todos after you create another
+            getAllToDos(req, res);
+        });
+    });
+
+    /*Todo.remove({
             _id : req.params.todo_id
         }, function(err, todo) {
             if (err)
-                res.send(err);
+                res.send(err); */
 
-            // get and return all the todos after you create another
-            Todo.find(function(err, todos) {
-                if (err)
-                    res.send(err)
-                res.json(todos);
-            });
-        });
-    });
-*/
+
+    app.use(express.static(__dirname + '/public'));
 
     // application -------------------------------------------------------------
     app.get('*', function(req, res) {
